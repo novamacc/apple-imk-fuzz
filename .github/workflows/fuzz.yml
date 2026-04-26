@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install coreutils (gtimeout)
+        run: |
+          if ! command -v gtimeout >/dev/null 2>&1; then
+            brew install coreutils 2>&1 | tail -3 || true
+          fi
+          which gtimeout || true
+          gtimeout --version 2>&1 | head -1 || true
+
       - name: Check environment
         run: |
           xcodebuild -version
@@ -41,12 +49,15 @@ jobs:
           if [ -z "$FUZZER" ]; then echo "no fuzzer found"; exit 0; fi
           MAX_LEN=131072
           [[ "${{ matrix.fuzzer }}" == "cascade_fuzzer" ]] && MAX_LEN=524288
-          timeout 18000 $FUZZER corpus/ \
+          # Use libFuzzer's own -max_total_time instead of external timeout
+          # (libFuzzer accepts time-based exit, no need for `timeout` shell util)
+          $FUZZER corpus/ \
             -max_len=$MAX_LEN \
             -timeout=10 \
             -rss_limit_mb=2048 \
             -jobs=3 \
             -workers=3 \
+            -max_total_time=18000 \
             -artifact_prefix=crashes/ \
             -print_final_stats=1 \
             || true
