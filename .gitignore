@@ -1,0 +1,6 @@
+**/corpus/
+**/crashes/
+**/fuzz_imk_menu
+**/fuzz_cascade
+**/*.dSYM
+**/*.o
